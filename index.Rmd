@@ -1,0 +1,97 @@
+---
+title: "FIM_October Fecal Coliform"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+ 
+    
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(ggmap)
+library(leaflet)
+library(tidyverse)
+
+```
+
+
+
+``` {r include=FALSE}
+mydata2 <- read.csv('FCECOLI_OctFIM.csv', header = TRUE)
+mydata2$Latitude <- as.numeric(mydata2$Latitude)
+head(mydata2)
+mydata2$WatchList <- as.factor(mydata2$WatchList)
+
+str(mydata2)
+
+df <- read.csv("FCECOLI_FIM1yr.csv", header = TRUE)
+head(df)
+
+df$WatchList <- as.factor(df$WatchList)
+df$Storm <- as.factor(df$Storm)
+str(df)
+
+
+```
+
+
+row {data-width=350}
+-----------------------------------------------------------------------
+
+### Fecal coliform/E.coli FIM Sites 
+
+```{r}
+fig <- ggplot() +
+  geom_point(data = mydata2, aes(x = Site, y=FC, size=FC), 
+             colour = 'blue', alpha = 0.5) +
+  geom_point(data = mydata2, aes(x=Site,y=E.Coli, size=E.Coli),
+             colour = 'green', alpha = 0.5) +
+  xlab('Site') +
+  ylab('Bacteria (CFU/100 ml)')
+
+
+ggplotly(fig, tooltip = c('y', 'x'))
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Flagged Sites (Based on Fecal Coliform counts/ambient conditions)
+
+```{r}
+pal <- colorFactor(c("red", "blue"), domain = mydata2$WatchList)
+
+
+m <- leaflet() %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  #addMarkers(lng = mydata2$Longitude, lat = mydata2$Latitude)
+  addCircles(lng = mydata2$Longitude, lat = mydata2$Latitude, 
+             weight = 12, label = mydata2$WatchList, popup = mydata2$Site, 
+             color = pal(mydata2$WatchList), labelOptions = labelOptions(noHide = FALSE))%>%
+  addLegend("topright", pal = pal, values = mydata2$WatchList)
+  
+m  # Print the map
+
+
+
+```
+
+### Fecal coliform/E.Coli counts for MY10 (Previous 1yr)
+
+```{r }
+
+pl <- ggplot(data = df, aes(x = Coldate, y = Result, fill = Bacteria, label = Storm)) +
+      geom_col(position = "dodge") + xlab("Date") + ylab("Bacteria cfu/100 ml") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+   
+      
+
+ggplotly(pl)
+
+
+```
+
